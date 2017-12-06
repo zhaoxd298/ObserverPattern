@@ -1,0 +1,127 @@
+#include <iostream>
+#include <list>
+
+using namespace std;
+
+
+
+/*-----------------------OBSERVER---------------------------*/
+class Observer {
+public:
+	virtual void update(float temp, float humidity, float pressure) = 0;
+};
+
+class DisplayElement {
+public:
+	virtual void display() = 0;	
+};
+/*--------------------------------------------------------*/
+
+/*--------------------------SUBJECT---------------------------*/
+class Subject {
+public:	
+	virtual void registerObserver(Observer* o) = 0;
+	virtual void removeObserver(Observer* o) = 0;
+	virtual void notifyObserver() = 0;
+};
+
+/*气象站(被观察者实例，一般只有一个)*/
+class WeatherData : public Subject {
+private:
+	list<Observer*> m_observers;
+	float m_temperature;
+	float m_humidity;
+	float m_pressure;
+
+public:	
+	WeatherData() {}
+	void registerObserver(Observer* o)
+	{
+		m_observers.push_back(o);
+	}
+
+	void removeObserver(Observer* o)
+	{
+		// 从m_observers列表中删除o
+	}
+
+	void notifyObserver()
+	{
+		list<Observer*>::iterator i;
+		Observer* observer;
+		for (i=m_observers.begin(); i!=m_observers.end(); i++) {
+			// 调用每一个观察者的update方法
+			observer = *i;
+			observer->update(m_temperature, m_humidity, m_pressure);
+		}
+	}
+
+	float getTemperature() 
+	{
+		return m_temperature;
+	}
+
+	float getHumidity()
+	{
+		return m_humidity;
+	}
+
+	float getPressure()
+	{
+		return m_pressure;
+	}
+
+	void measurementChanged()
+	{
+		notifyObserver();
+	}
+
+	void setMeasurements(float temp, float humidity, float pressure)
+	{
+		this->m_temperature = temp;
+		this->m_humidity = humidity;
+		this->m_pressure = pressure;
+		measurementChanged();
+	}
+
+	// WeatherData的其他方法
+};
+/*------------------------------------------------------------------*/
+
+/*显示目前状况(观察者实例，有多个)*/
+class CurrentConditionsDisplay : public Observer, public DisplayElement {
+private:
+	float m_temperature;
+	float m_humidity;
+	Subject* m_weatherData;	
+
+public:
+	CurrentConditionsDisplay(Subject* weatherData)
+	{
+		this->m_weatherData = weatherData;
+		weatherData->registerObserver(this);
+	}
+	void update(float temp, float humidity, float pressure)
+	{
+		this->m_temperature = temp;
+		this->m_humidity = humidity;
+
+		display();
+	}
+	void display()
+	{
+		cout << "temperature:" << m_temperature << endl;
+		cout << "humidity:" << m_humidity << endl;
+	}
+};
+
+int main()
+{
+	WeatherData* weatherData = new WeatherData();
+	CurrentConditionsDisplay* currentDisplay = new CurrentConditionsDisplay(weatherData);
+	
+	weatherData->setMeasurements(80, 65, 30.4);
+	weatherData->setMeasurements(90, 55, 20.4);
+
+	return 0;
+}
